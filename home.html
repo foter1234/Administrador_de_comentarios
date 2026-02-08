@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Área Logada</title>
+</head>
+<body>
+  <h1>Bem-vindo!</h1>
+  <button onclick="logout()">Sair</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const supabase = window.supabase.createClient(
+      "https://uqhuqyyzygzisohwkyeu.supabase.co",
+      "sb_publishable_JxPXj6Vyt7z_Jj_SPofMOw_Gsmk3hMW"
+    );
+
+    async function checkUser() {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) {
+        window.location.href = "index.html";
+      }
+    }
+
+    async function logout() {
+      await supabase.auth.signOut();
+      window.location.href = "index.html";
+    }
+
+    checkUser();
+  </script>
+</body>
+</html>
