@@ -146,44 +146,49 @@
 
   // 📥📤 CARREGAR COMENTÁRIOS
   async function carregarComentarios() {
-    const { data } = await client
-      .from("comentarios")
-      .select("*")
-      .order("criado_em", { ascending: false });
+  const { data, error } = await client
+    .from("comentarios")
+    .select("*")
+    .eq("status", "pendente")
+    .order("id", { ascending: false });
 
-    const pendentes = document.getElementById("comentariosPendentes");
-    const aprovados = document.getElementById("comentariosAprovados");
-
-    pendentes.innerHTML = "";
-    aprovados.innerHTML = "";
-
-    data.forEach(c => {
-      const div = document.createElement("div");
-      div.className = "comentario";
-
-      div.innerHTML = `
-        <strong>${c.nome} (${c.estrelas}★)</strong>
-        <small>${c.cidade || ""}</small>
-        <p>${c.mensagem}</p>
-        <div class="acoes">
-          ${
-            c.aprovado
-              ? `<button class="btn-remover" onclick="desaprovar(${c.id})">Remover do site</button>`
-              : `<button class="btn-aprovar" onclick="aprovar(${c.id})">Postar no site</button>`
-          }
-          <button class="btn-excluir" onclick="excluir(${c.id})">Excluir</button>
-        </div>
-      `;
-
-      c.aprovado ? aprovados.appendChild(div) : pendentes.appendChild(div);
-    });
+  if (error) {
+    console.error(error);
+    return;
   }
+
+  const lista = document.getElementById("listaPendentes");
+  lista.innerHTML = "";
+
+  data.forEach((c) => {
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <p><strong>${c.nome}</strong> - ${c.estrelas}★</p>
+      <p>${c.mensagem}</p>
+      <button onclick="aprovarComentario(${c.id})">Aprovar</button>
+      <button onclick="excluirComentario(${c.id})">Excluir</button>
+      <hr>
+    `;
+    lista.appendChild(div);
+  });
+}
+
 
   // ✅ APROVAR
-  async function aprovar(id) {
-    await client.from("comentarios").update({ aprovado: true }).eq("id", id);
+  async function aprovarComentario(id) {
+  const { data, error } = await client
+    .from("comentarios")
+    .update({ status: "aprovado" })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Erro ao aprovar:", error);
+    alert("Erro ao aprovar comentário");
+  } else {
     carregarComentarios();
   }
+}
+
 
   // ❌ REMOVER DO SITE
   async function desaprovar(id) {
@@ -192,11 +197,20 @@
   }
 
   // 🗑️ EXCLUIR
-  async function excluir(id) {
-    if (!confirm("Deseja excluir este comentário?")) return;
-    await client.from("comentarios").delete().eq("id", id);
+  async function excluirComentario(id) {
+  const { error } = await client
+    .from("comentarios")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("Erro ao excluir:", error);
+    alert("Erro ao excluir comentário");
+  } else {
     carregarComentarios();
   }
+}
+
 
   checkUser();
 </script>
