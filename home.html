@@ -2,46 +2,204 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Área Logada</title>
+  <title>Painel Administrativo</title>
 
   <style>
     body {
       display: none;
       font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    h1 {
+      margin: 0;
+    }
+
+    button {
+      padding: 8px 14px;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+
+    .btn-logout {
+      background: #e74c3c;
+      color: #fff;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .box {
+      background: #fff;
+      padding: 15px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    .box h2 {
+      margin-top: 0;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 8px;
+    }
+
+    .comentario {
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+    }
+
+    .comentario strong {
+      display: block;
+    }
+
+    .acoes {
+      margin-top: 8px;
+    }
+
+    .acoes button {
+      margin-right: 6px;
+      font-size: 12px;
+    }
+
+    .btn-aprovar {
+      background: #2ecc71;
+      color: #fff;
+    }
+
+    .btn-remover {
+      background: #f39c12;
+      color: #fff;
+    }
+
+    .btn-excluir {
+      background: #c0392b;
+      color: #fff;
+    }
+
+    @media (max-width: 900px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>Bem-vindo!</h1>
-  <button id="btnLogout">Sair</button>
 
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<header>
+  <h1>Painel de Comentários</h1>
+  <button id="btnLogout" class="btn-logout">Sair</button>
+</header>
 
-  <script>
-    const supabaseUrl = "https://uqhuqyyzygzisohwkyeu.supabase.co";
-    const supabaseKey = "sb_publishable_JxPXj6Vyt7z_Jj_SPofMOw_Gsmk3hMW";
+<div class="container">
+  <div class="box">
+    <h2>Comentários não postados</h2>
+    <div id="comentariosPendentes"></div>
+  </div>
 
-    const client = supabase.createClient(supabaseUrl, supabaseKey);
+  <div class="box">
+    <h2>Comentários postados</h2>
+    <div id="comentariosAprovados"></div>
+  </div>
+</div>
 
-    async function checkUser() {
-      const { data } = await client.auth.getUser();
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
-      if (!data.user) {
-        window.location.href = "/login/index.html";
-      } else {
-        document.body.style.display = "block";
-      }
-    }
+<script>
+  const supabaseUrl = "https://uqhuqyyzygzisohwkyeu.supabase.co";
+  const supabaseKey = "sb_publishable_JxPXj6Vyt7z_Jj_SPofMOw_Gsmk3hMW";
+  const client = supabase.createClient(supabaseUrl, supabaseKey);
 
-    async function logout() {
-      await client.auth.signOut();
+  // 🔒 LOGIN (NÃO MEXIDO)
+  async function checkUser() {
+    const { data } = await client.auth.getUser();
+
+    if (!data.user) {
       window.location.href = "/login/index.html";
+    } else {
+      document.body.style.display = "block";
+      carregarComentarios();
     }
+  }
 
-    document.getElementById("btnLogout").addEventListener("click", logout);
+  async function logout() {
+    await client.auth.signOut();
+    window.location.href = "/login/index.html";
+  }
 
-    checkUser();
-  </script>
+  document.getElementById("btnLogout").addEventListener("click", logout);
+
+  // 📥📤 CARREGAR COMENTÁRIOS
+  async function carregarComentarios() {
+    const { data } = await client
+      .from("comentarios")
+      .select("*")
+      .order("criado_em", { ascending: false });
+
+    const pendentes = document.getElementById("comentariosPendentes");
+    const aprovados = document.getElementById("comentariosAprovados");
+
+    pendentes.innerHTML = "";
+    aprovados.innerHTML = "";
+
+    data.forEach(c => {
+      const div = document.createElement("div");
+      div.className = "comentario";
+
+      div.innerHTML = `
+        <strong>${c.nome} (${c.estrelas}★)</strong>
+        <small>${c.cidade || ""}</small>
+        <p>${c.mensagem}</p>
+        <div class="acoes">
+          ${
+            c.aprovado
+              ? `<button class="btn-remover" onclick="desaprovar(${c.id})">Remover do site</button>`
+              : `<button class="btn-aprovar" onclick="aprovar(${c.id})">Postar no site</button>`
+          }
+          <button class="btn-excluir" onclick="excluir(${c.id})">Excluir</button>
+        </div>
+      `;
+
+      c.aprovado ? aprovados.appendChild(div) : pendentes.appendChild(div);
+    });
+  }
+
+  // ✅ APROVAR
+  async function aprovar(id) {
+    await client.from("comentarios").update({ aprovado: true }).eq("id", id);
+    carregarComentarios();
+  }
+
+  // ❌ REMOVER DO SITE
+  async function desaprovar(id) {
+    await client.from("comentarios").update({ aprovado: false }).eq("id", id);
+    carregarComentarios();
+  }
+
+  // 🗑️ EXCLUIR
+  async function excluir(id) {
+    if (!confirm("Deseja excluir este comentário?")) return;
+    await client.from("comentarios").delete().eq("id", id);
+    carregarComentarios();
+  }
+
+  checkUser();
+</script>
+
 </body>
 </html>
