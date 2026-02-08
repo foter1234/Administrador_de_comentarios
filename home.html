@@ -121,12 +121,20 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <script>
+  // Configuração do Supabase
   const supabaseUrl = "https://uqhuqyyzygzisohwkyeu.supabase.co";
   const supabaseKey = "sb_publishable_JxPXj6Vyt7z_Jj_SPofMOw_Gsmk3hMW";
   const client = supabase.createClient(supabaseUrl, supabaseKey);
 
+  // Verifica se o usuário está logado
   async function checkUser() {
-    const { data } = await client.auth.getUser();
+    const { data, error } = await client.auth.getUser();
+    if (error) {
+      console.error("Erro ao verificar usuário:", error);
+      alert("Erro ao verificar usuário.");
+      return;
+    }
+
     if (!data.user) {
       window.location.href = "/login/index.html";
     } else {
@@ -135,19 +143,26 @@
     }
   }
 
+  // Logout
   async function logout() {
-    await client.auth.signOut();
+    const { error } = await client.auth.signOut();
+    if (error) {
+      console.error("Erro ao sair:", error);
+      alert("Não foi possível sair.");
+      return;
+    }
     window.location.href = "/login/index.html";
   }
 
   document.getElementById("btnLogout").addEventListener("click", logout);
 
+  // Carrega todos os comentários
   async function carregarComentarios() {
-    carregarPendentes();
-    carregarAprovados();
+    await carregarPendentes();
+    await carregarAprovados();
   }
 
-  // 🔴 Pendentes (aprovado = false)
+  // Comentários pendentes (aprovado = false)
   async function carregarPendentes() {
     const { data, error } = await client
       .from("comentarios")
@@ -155,7 +170,10 @@
       .eq("aprovado", false)
       .order("id", { ascending: false });
 
-    if (error) return console.error(error);
+    if (error) {
+      console.error("Erro ao carregar comentários pendentes:", error);
+      return;
+    }
 
     const lista = document.getElementById("comentariosPendentes");
     lista.innerHTML = "";
@@ -174,7 +192,7 @@
     });
   }
 
-  // 🟢 Aprovados (aprovado = true)
+  // Comentários aprovados (aprovado = true)
   async function carregarAprovados() {
     const { data, error } = await client
       .from("comentarios")
@@ -182,7 +200,10 @@
       .eq("aprovado", true)
       .order("id", { ascending: false });
 
-    if (error) return console.error(error);
+    if (error) {
+      console.error("Erro ao carregar comentários aprovados:", error);
+      return;
+    }
 
     const lista = document.getElementById("comentariosAprovados");
     lista.innerHTML = "";
@@ -201,23 +222,61 @@
     });
   }
 
+  // Aprovar comentário
   async function aprovar(id) {
-    await client.from("comentarios").update({ aprovado: true }).eq("id", id);
-    carregarComentarios();
+    const { error } = await client
+      .from("comentarios")
+      .update({ aprovado: true })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Erro ao aprovar comentário:", error);
+      alert("Não foi possível aprovar o comentário.");
+      return;
+    }
+
+    await carregarComentarios();
   }
 
+  // Desaprovar comentário
   async function desaprovar(id) {
-    await client.from("comentarios").update({ aprovado: false }).eq("id", id);
-    carregarComentarios();
+    const { error } = await client
+      .from("comentarios")
+      .update({ aprovado: false })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Erro ao ocultar comentário:", error);
+      alert("Não foi possível ocultar o comentário.");
+      return;
+    }
+
+    await carregarComentarios();
   }
 
+  // Excluir comentário
   async function excluir(id) {
-    await client.from("comentarios").delete().eq("id", id);
-    carregarComentarios();
+    const confirmar = confirm("Tem certeza que deseja excluir este comentário?");
+    if (!confirmar) return;
+
+    const { error } = await client
+      .from("comentarios")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("Erro ao excluir comentário:", error);
+      alert("Não foi possível excluir o comentário.");
+      return;
+    }
+
+    await carregarComentarios();
   }
 
+  // Inicia o painel
   checkUser();
 </script>
+
 
 
 </body>
