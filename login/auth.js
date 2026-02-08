@@ -33,7 +33,7 @@ async function login() {
     msg.textContent = error.message;
   } else {
     msg.textContent = "Login realizado!";
-    window.location.href = "../home.html";
+  window.location.href = "/home.html";
 
   }
 }
