@@ -3,12 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <title>Área Logada</title>
+
+  <style>
+    body {
+      display: none;
+      font-family: Arial, sans-serif;
+    }
+  </style>
 </head>
 <body>
   <h1>Bem-vindo!</h1>
   <button id="btnLogout">Sair</button>
 
-  <!-- Supabase versão correta para navegador -->
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
   <script>
@@ -22,6 +29,8 @@
 
       if (!data.user) {
         window.location.href = "/login/index.html";
+      } else {
+        document.body.style.display = "block";
       }
     }
 
